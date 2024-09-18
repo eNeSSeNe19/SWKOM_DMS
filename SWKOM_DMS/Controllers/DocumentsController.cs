@@ -19,6 +19,14 @@ namespace SWKOM_DMS.Controllers
         }
 
         // 1. Get list of documents (hardcoded for now)
+
+        [HttpGet("/")]
+        public IActionResult GetRoot()
+        {
+            // Return a hardcoded response when accessing the root URL
+            return Ok(new { message = "Welcome to the Document Management API", documents = Documents });
+        }
+
         [HttpGet("list")]
         public IActionResult GetDocuments()
         {
