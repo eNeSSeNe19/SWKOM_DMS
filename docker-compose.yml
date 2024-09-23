@@ -1,0 +1,8 @@
+version: '3.4'
+
+services:
+  swkom_dms:
+    image: ${DOCKER_REGISTRY-}swkomdms
+    build:
+      context: .
+      dockerfile: SWKOM_DMS/Dockerfile
