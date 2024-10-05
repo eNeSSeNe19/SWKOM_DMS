@@ -1,12 +1,19 @@
 ﻿version: '3.8'
 
 services:
-  webapi:
+  rest-server:
+    image: myapp
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-        - "8081:8080"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - "8081:80"
 
+  web-ui:
+    image: nginx-frontend
+    build:
+      context: ./nginx
+    ports:
+      - "8080:80"
+    depends_on:
+      - rest-server
