@@ -12,7 +12,7 @@ services:
       - postgres  # Ensure the rest-server waits for PostgreSQL to be ready
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=postgres;Database=swkom_dms;Username=postgres;Password=yourpassword
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=swkom_dms;Username=enes;Password=sene
 
   web-ui:
     image: nginx-frontend
@@ -26,13 +26,13 @@ services:
   postgres:
     image: postgres:13
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: yourpassword
+      POSTGRES_USER: enes
+      POSTGRES_PASSWORD: sene
       POSTGRES_DB: swkom_dms
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "1919:5432"
 
 volumes:
   postgres_data:

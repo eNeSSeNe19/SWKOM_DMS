@@ -22,7 +22,22 @@ namespace SWKOM_DMS.Controllers
             _repository = repository;
         }
 
-        // 3. Upload a document using the DTO and map to entity
+        // 1. List all documents
+        [HttpGet("list")]
+        public async Task<IActionResult> GetDocuments()
+        {
+            try
+            {
+                var documents = await _repository.GetAllDocumentsAsync(); // Fetch all documents from the repository
+                return Ok(documents);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error fetching documents: {ex.Message}");
+            }
+        }
+
+        // 2. Upload a document using the DTO and map to entity
         [HttpPost("upload")]
         public IActionResult UploadDocument([FromBody] DocumentDto documentDto)
         {
@@ -39,6 +54,7 @@ namespace SWKOM_DMS.Controllers
             return Ok("Document uploaded successfully.");
         }
 
+        // 3. Test database connection
         [HttpGet("test-db-connection")]
         public async Task<IActionResult> TestDbConnection()
         {
@@ -51,7 +67,7 @@ namespace SWKOM_DMS.Controllers
                     FileSize = 1000,
                     ContentType = "application/pdf",
                     FileContent = new byte[] { 0x1, 0x2, 0x3 },
-                    UploadDate = DateTime.Now
+                    UploadDate = DateTime.UtcNow
                 };
 
                 await _repository.AddDocumentAsync(document); // Using repository to add document
