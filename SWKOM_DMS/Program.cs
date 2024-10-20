@@ -1,45 +1,5 @@
-
-//namespace SWKOM_DMS
-//{
-//    public class Program
-//    {
-//        public static void Main(string[] args)
-//        {
-//            var builder = WebApplication.CreateBuilder(args);
-
-//            // Ensure the application listens on port 80 inside the container
-//            builder.WebHost.UseUrls("http://*:80");
-
-
-
-//            // Add services to the container.
-
-//            builder.Services.AddControllers();
-//            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-//            builder.Services.AddEndpointsApiExplorer();
-//            builder.Services.AddSwaggerGen();
-
-//            var app = builder.Build();
-
-//            // Configure the HTTP request pipeline.
-//            if (app.Environment.IsDevelopment())
-//            {
-//                app.UseSwagger();
-//                app.UseSwaggerUI();
-//            }
-
-//            app.UseHttpsRedirection();
-
-//            app.UseAuthorization();
-
-
-//            app.MapControllers();
-
-//            app.Run();
-//        }
-//    }
-//}
-
+using AutoMapper;  // Add this at the top
+using Microsoft.EntityFrameworkCore;
 
 namespace SWKOM_DMS
 {
@@ -48,6 +8,13 @@ namespace SWKOM_DMS
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.Services.AddAutoMapper(typeof(Program));
+
+            builder.Services.AddDbContext<DocumentDbContext>(options =>
+                options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
 
             // Ensure the application listens on port 80 inside the container
             builder.WebHost.UseUrls("http://*:80");
