@@ -1,4 +1,8 @@
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using SWKOM_DMS.DTOs;
+using SWKOM_DMS.Entities;
+using System.Threading.Tasks;
 
 namespace SWKOM_DMS.Controllers
 {
@@ -6,80 +10,73 @@ namespace SWKOM_DMS.Controllers
     [Route("api/[controller]")]
     public class DocumentsController : ControllerBase
     {
-        private static readonly string[] Documents = new[]
-        {
-            "Document1.pdf", "Document2.docx", "Document3.xlsx"
-        };
-
+        private readonly IMapper _mapper;
         private readonly ILogger<DocumentsController> _logger;
+        private readonly IDocumentRepository _repository; // Injecting repository
 
-        public DocumentsController(ILogger<DocumentsController> logger)
+        // Constructor now includes repository
+        public DocumentsController(IMapper mapper, ILogger<DocumentsController> logger, IDocumentRepository repository)
         {
+            _mapper = mapper;
             _logger = logger;
+            _repository = repository;
         }
 
-        // 1. Get list of documents (hardcoded for now)
-
-        [HttpGet("/")]
-        public IActionResult GetRoot()
-        {
-            // Return a hardcoded response when accessing the root URL
-            return Ok(new { message = "Welcome to the Document Management API", documents = Documents });
-        }
-
+        // 1. List all documents
         [HttpGet("list")]
-        public IActionResult GetDocuments()
+        public async Task<IActionResult> GetDocuments()
         {
-            // Returning hardcoded list of documents
-            return Ok(Documents);
-        }
-
-        // 2. Get a single document by ID (hardcoded response)
-        [HttpGet("{id}")]
-        public IActionResult GetDocumentById(int id)
-        {
-            if (id < 0 || id >= Documents.Length)
+            try
             {
-                return NotFound("Document not found");
+                var documents = await _repository.GetAllDocumentsAsync(); // Fetch all documents from the repository
+                return Ok(documents);
             }
-
-            // Returning a hardcoded single document
-            return Ok(new { id = id, name = Documents[id], content = "This is the content of the document." });
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error fetching documents: {ex.Message}");
+            }
         }
 
-        // 3. Upload a document (simulating upload for now)
+        // 2. Upload a document using the DTO and map to entity
         [HttpPost("upload")]
-        public IActionResult UploadDocument()
+        public IActionResult UploadDocument([FromBody] DocumentDto documentDto)
         {
-            // In Sprint 1, this just returns a hardcoded response
-            return Ok("Document uploaded successfully!");
-        }
-
-        // 4. Search for documents by a keyword (hardcoded)
-        [HttpGet("search/{keyword}")]
-        public IActionResult SearchDocuments(string keyword)
-        {
-            var results = Documents.Where(d => d.Contains(keyword)).ToList();
-            if (!results.Any())
+            if (documentDto == null)
             {
-                return NotFound("No documents found with the given keyword.");
+                return BadRequest("Document data is missing.");
             }
 
-            // Returning hardcoded search results
-            return Ok(results);
+            // Map DTO to Document entity
+            var documentEntity = _mapper.Map<Document>(documentDto);
+
+            // Normally, you'd save the entity to the database here
+            // For now, we return a success response
+            return Ok("Document uploaded successfully.");
         }
 
-        // 5. Delete a document by ID (hardcoded response)
-        [HttpDelete("{id}")]
-        public IActionResult DeleteDocument(int id)
+        // 3. Test database connection
+        [HttpGet("test-db-connection")]
+        public async Task<IActionResult> TestDbConnection()
         {
-            if (id < 0 || id >= Documents.Length)
+            try
             {
-                return NotFound("Document not found");
-            }
+                var document = new Document
+                {
+                    FileName = "Test Document",
+                    FileType = "pdf",
+                    FileSize = 1000,
+                    ContentType = "application/pdf",
+                    FileContent = new byte[] { 0x1, 0x2, 0x3 },
+                    UploadDate = DateTime.UtcNow
+                };
 
-            // Simulating document deletion
-            return Ok($"Document with ID {id} deleted successfully.");
+                await _repository.AddDocumentAsync(document); // Using repository to add document
+                return Ok("Database connection and insert operation successful.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Database connection failed: {ex.Message}");
+            }
         }
     }
 }
