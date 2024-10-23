@@ -1,4 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+<<<<<<< Updated upstream
+=======
+using SWKOM_DMS.DTOs;
+using SWKOM_DMS.Entities;
+using SWKOM_DMS.Services; // Add this to include RabbitMQ service
+using System.Threading.Tasks;
+>>>>>>> Stashed changes
 
 namespace SWKOM_DMS.Controllers
 {
@@ -12,10 +19,23 @@ namespace SWKOM_DMS.Controllers
         };
 
         private readonly ILogger<DocumentsController> _logger;
+<<<<<<< Updated upstream
 
         public DocumentsController(ILogger<DocumentsController> logger)
+=======
+        private readonly IDocumentRepository _repository;
+        private readonly RabbitMQService _rabbitMqService; // Inject RabbitMQService
+
+        // Constructor now includes RabbitMQ service
+        public DocumentsController(IMapper mapper, ILogger<DocumentsController> logger, IDocumentRepository repository, RabbitMQService rabbitMqService)
+>>>>>>> Stashed changes
         {
             _logger = logger;
+<<<<<<< Updated upstream
+=======
+            _repository = repository;
+            _rabbitMqService = rabbitMqService;
+>>>>>>> Stashed changes
         }
 
         // 1. Get list of documents (hardcoded for now)
@@ -49,10 +69,30 @@ namespace SWKOM_DMS.Controllers
 
         // 3. Upload a document (simulating upload for now)
         [HttpPost("upload")]
+<<<<<<< Updated upstream
         public IActionResult UploadDocument()
         {
             // In Sprint 1, this just returns a hardcoded response
             return Ok("Document uploaded successfully!");
+=======
+        public async Task<IActionResult> UploadDocument([FromBody] DocumentDto documentDto)
+        {
+            if (documentDto == null)
+            {
+                return BadRequest("Document data is missing.");
+            }
+
+            // Map DTO to Document entity
+            var documentEntity = _mapper.Map<Document>(documentDto);
+
+            // Save the document in the database
+            await _repository.AddDocumentAsync(documentEntity);
+
+            // Send message to RabbitMQ
+            _rabbitMqService.SendMessage($"Document uploaded: {documentEntity.FileName}");
+
+            return Ok("Document uploaded and message sent to RabbitMQ successfully.");
+>>>>>>> Stashed changes
         }
 
         // 4. Search for documents by a keyword (hardcoded)
@@ -65,6 +105,7 @@ namespace SWKOM_DMS.Controllers
                 return NotFound("No documents found with the given keyword.");
             }
 
+<<<<<<< Updated upstream
             // Returning hardcoded search results
             return Ok(results);
         }
@@ -74,6 +115,16 @@ namespace SWKOM_DMS.Controllers
         public IActionResult DeleteDocument(int id)
         {
             if (id < 0 || id >= Documents.Length)
+=======
+                await _repository.AddDocumentAsync(document); // Using repository to add document
+
+                // Send test message to RabbitMQ
+                _rabbitMqService.SendMessage($"Test document uploaded: {document.FileName}");
+
+                return Ok("Database connection and insert operation successful.");
+            }
+            catch (Exception ex)
+>>>>>>> Stashed changes
             {
                 return NotFound("Document not found");
             }

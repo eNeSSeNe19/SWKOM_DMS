@@ -6,7 +6,49 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
+<<<<<<< Updated upstream
         - "8081:8080"
+=======
+      - "8081:80"
+    depends_on:
+      - postgres  # Ensure the rest-server waits for PostgreSQL to be ready
+      - rabbitmq  # Ensure rest-server starts after RabbitMQ
+>>>>>>> Stashed changes
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
 
+<<<<<<< Updated upstream
+=======
+  web-ui:
+    image: nginx-frontend
+    build:
+      context: ./nginx
+    ports:
+      - "8080:80"
+    depends_on:
+      - rest-server
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: enes
+      POSTGRES_PASSWORD: sene
+      POSTGRES_DB: swkom_dms
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "1919:5432"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"  # Port for RabbitMQ client connections
+      - "15672:15672"  # Port for RabbitMQ management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+
+volumes:
+  postgres_data:
+>>>>>>> Stashed changes

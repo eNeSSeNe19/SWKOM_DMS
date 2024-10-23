@@ -1,3 +1,9 @@
+<<<<<<< Updated upstream
+=======
+using AutoMapper;  // Add this at the top
+using Microsoft.EntityFrameworkCore;
+using SWKOM_DMS.Services;
+>>>>>>> Stashed changes
 
 namespace SWKOM_DMS
 {
@@ -13,6 +19,8 @@ namespace SWKOM_DMS
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddSingleton<RabbitMQService>();
+
 
             var app = builder.Build();
 
