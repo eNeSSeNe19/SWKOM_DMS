@@ -2,6 +2,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using SWKOM_DMS.DTOs;
 using SWKOM_DMS.Entities;
+using SWKOM_DMS.Services; // Add this to include RabbitMQ service
 using System.Threading.Tasks;
 
 namespace SWKOM_DMS.Controllers
@@ -12,14 +13,16 @@ namespace SWKOM_DMS.Controllers
     {
         private readonly IMapper _mapper;
         private readonly ILogger<DocumentsController> _logger;
-        private readonly IDocumentRepository _repository; // Injecting repository
+        private readonly IDocumentRepository _repository;
+        private readonly RabbitMQService _rabbitMqService; // Inject RabbitMQService
 
-        // Constructor now includes repository
-        public DocumentsController(IMapper mapper, ILogger<DocumentsController> logger, IDocumentRepository repository)
+        // Constructor now includes RabbitMQ service
+        public DocumentsController(IMapper mapper, ILogger<DocumentsController> logger, IDocumentRepository repository, RabbitMQService rabbitMqService)
         {
             _mapper = mapper;
             _logger = logger;
             _repository = repository;
+            _rabbitMqService = rabbitMqService;
         }
 
         // 1. List all documents
@@ -39,7 +42,7 @@ namespace SWKOM_DMS.Controllers
 
         // 2. Upload a document using the DTO and map to entity
         [HttpPost("upload")]
-        public IActionResult UploadDocument([FromBody] DocumentDto documentDto)
+        public async Task<IActionResult> UploadDocument([FromBody] DocumentDto documentDto)
         {
             if (documentDto == null)
             {
@@ -49,9 +52,13 @@ namespace SWKOM_DMS.Controllers
             // Map DTO to Document entity
             var documentEntity = _mapper.Map<Document>(documentDto);
 
-            // Normally, you'd save the entity to the database here
-            // For now, we return a success response
-            return Ok("Document uploaded successfully.");
+            // Save the document in the database
+            await _repository.AddDocumentAsync(documentEntity);
+
+            // Send message to RabbitMQ
+            _rabbitMqService.SendMessage($"Document uploaded: {documentEntity.FileName}");
+
+            return Ok("Document uploaded and message sent to RabbitMQ successfully.");
         }
 
         // 3. Test database connection
@@ -71,6 +78,10 @@ namespace SWKOM_DMS.Controllers
                 };
 
                 await _repository.AddDocumentAsync(document); // Using repository to add document
+
+                // Send test message to RabbitMQ
+                _rabbitMqService.SendMessage($"Test document uploaded: {document.FileName}");
+
                 return Ok("Database connection and insert operation successful.");
             }
             catch (Exception ex)

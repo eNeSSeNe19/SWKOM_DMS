@@ -1,5 +1,6 @@
 using AutoMapper;  // Add this at the top
 using Microsoft.EntityFrameworkCore;
+using SWKOM_DMS.Services;
 
 namespace SWKOM_DMS
 {
@@ -35,6 +36,7 @@ namespace SWKOM_DMS
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+            builder.Services.AddSingleton<RabbitMQService>();
 
             var app = builder.Build();
 

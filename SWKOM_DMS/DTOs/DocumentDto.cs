@@ -2,8 +2,9 @@
 {
     public class DocumentDto
     {
-        public string FileName { get; set; }
-        public string ContentType { get; set; }
-        public byte[] FileContent { get; set; }
+        required public string FileName { get; set; }
+        required public string ContentType { get; set; }
+        required public byte[] FileContent { get; set; }
+        required public string FileType { get; set; } 
     }
 }
