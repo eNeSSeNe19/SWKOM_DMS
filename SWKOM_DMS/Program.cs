@@ -1,6 +1,12 @@
-using AutoMapper;  // Add this at the top
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using SWKOM_DMS.Services;
+using log4net;
+using log4net.Config;
+using System.IO;
+using System.Reflection;
+using SWKOM_DMS.logging;
+using CustomLoggerFactory = SWKOM_DMS.logging.LoggerFactory;
 
 namespace SWKOM_DMS
 {
@@ -36,7 +42,19 @@ namespace SWKOM_DMS
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            // Configure log4net
+            var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+            XmlConfigurator.Configure(logRepository, new FileInfo("C:\\Users\\eNeSSeNe\\Desktop\\SWKOM_DMS\\SWKOM_DMS\\logging\\log4net.config")); // Path to your config file
+
+            // Register RabbitMQService with ILoggerWrapper
+            builder.Services.AddSingleton<ILoggerWrapper>(CustomLoggerFactory.GetLogger());
             builder.Services.AddSingleton<RabbitMQService>();
+
+
+            var logger = new Log4NetWrapper(); // assuming `Log4NetWrapper` has been properly configured
+            logger.Info("Application started - test log");
+
 
             var app = builder.Build();
 

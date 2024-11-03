@@ -21,7 +21,6 @@ namespace SWKOM_DMS.Entities
         [Required(ErrorMessage = "UploadDate is required")]
         public DateTime UploadDate { get; set; }
 
-        // Add these missing properties
         [Required(ErrorMessage = "ContentType is required")]
         public string ContentType { get; set; }
 

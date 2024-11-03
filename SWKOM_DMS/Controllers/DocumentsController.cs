@@ -2,8 +2,9 @@ using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using SWKOM_DMS.DTOs;
 using SWKOM_DMS.Entities;
-using SWKOM_DMS.Services; // Add this to include RabbitMQ service
+using SWKOM_DMS.Services; 
 using System.Threading.Tasks;
+using SWKOM_DMS.logging;
 
 namespace SWKOM_DMS.Controllers
 {
@@ -12,12 +13,12 @@ namespace SWKOM_DMS.Controllers
     public class DocumentsController : ControllerBase
     {
         private readonly IMapper _mapper;
-        private readonly ILogger<DocumentsController> _logger;
+        private readonly ILoggerWrapper _logger;
         private readonly IDocumentRepository _repository;
         private readonly RabbitMQService _rabbitMqService; // Inject RabbitMQService
 
         // Constructor now includes RabbitMQ service
-        public DocumentsController(IMapper mapper, ILogger<DocumentsController> logger, IDocumentRepository repository, RabbitMQService rabbitMqService)
+        public DocumentsController(IMapper mapper, ILoggerWrapper logger, IDocumentRepository repository, RabbitMQService rabbitMqService)
         {
             _mapper = mapper;
             _logger = logger;
@@ -40,26 +41,40 @@ namespace SWKOM_DMS.Controllers
             }
         }
 
-        // 2. Upload a document using the DTO and map to entity
+
         [HttpPost("upload")]
         public async Task<IActionResult> UploadDocument([FromBody] DocumentDto documentDto)
         {
             if (documentDto == null)
             {
+                _logger.Warn("Upload attempted with a null DocumentDto.");
                 return BadRequest("Document data is missing.");
             }
 
-            // Map DTO to Document entity
-            var documentEntity = _mapper.Map<Document>(documentDto);
+            try
+            {
+                // Map DTO to Document entity
+                var documentEntity = _mapper.Map<Document>(documentDto);
 
-            // Save the document in the database
-            await _repository.AddDocumentAsync(documentEntity);
+                // Save the document in the database
+                await _repository.AddDocumentAsync(documentEntity);
+                _logger.Info($"Document saved to the database successfully: {documentEntity.FileName}");
 
-            // Send message to RabbitMQ
-            _rabbitMqService.SendMessage($"Document uploaded: {documentEntity.FileName}");
+                // Send message to RabbitMQ
+                _rabbitMqService.SendMessage($"Document uploaded: {documentEntity.FileName}");
+                _logger.Info($"Message sent to RabbitMQ for document: {documentEntity.FileName}");
 
-            return Ok("Document uploaded and message sent to RabbitMQ successfully.");
+                return Ok("Document uploaded and message sent to RabbitMQ successfully.");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error occurred while uploading document or sending message to RabbitMQ.", ex);
+                return StatusCode(500, "An error occurred while uploading the document.");
+            }
         }
+
+
+
 
         // 3. Test database connection
         [HttpGet("test-db-connection")]
