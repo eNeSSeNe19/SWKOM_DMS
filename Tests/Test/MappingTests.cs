@@ -25,6 +25,7 @@ namespace SWKOM_DMS.Tests
             var documentDto = new DocumentDto
             {
                 FileName = "test.pdf",
+                FileType = "pdf",
                 ContentType = "application/pdf",
                 FileContent = new byte[] { 0x01, 0x02, 0x03 }
             };
