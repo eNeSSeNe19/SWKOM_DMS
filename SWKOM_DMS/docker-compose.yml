@@ -44,5 +44,12 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
 
+  ocr-worker:
+    image: ocr-worker
+    build:
+      context: ../OCRWorker # Adjust to the correct relative path to OCRWorker Dockerfile
+    depends_on:
+     - rabbitmq
+
 volumes:
   postgres_data:

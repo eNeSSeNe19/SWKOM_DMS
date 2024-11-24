@@ -5,7 +5,12 @@ VisualStudioVersion = 17.9.34607.119
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SWKOM_DMS", "SWKOM_DMS\SWKOM_DMS.csproj", "{F9F2F974-7474-4368-B3C6-C33C4458C5C9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{BAB569F9-1914-4A4E-929E-A578492B0A0B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj", "{BAB569F9-1914-4A4E-929E-A578492B0A0B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OCRWorker", "OCRWorker\OCRWorker.csproj", "{1BA2B4FA-CE2E-4646-83FE-6630AC7B20A6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F9F2F974-7474-4368-B3C6-C33C4458C5C9} = {F9F2F974-7474-4368-B3C6-C33C4458C5C9}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +26,10 @@ Global
 		{BAB569F9-1914-4A4E-929E-A578492B0A0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BAB569F9-1914-4A4E-929E-A578492B0A0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BAB569F9-1914-4A4E-929E-A578492B0A0B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1BA2B4FA-CE2E-4646-83FE-6630AC7B20A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BA2B4FA-CE2E-4646-83FE-6630AC7B20A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BA2B4FA-CE2E-4646-83FE-6630AC7B20A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BA2B4FA-CE2E-4646-83FE-6630AC7B20A6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

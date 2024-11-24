@@ -29,8 +29,8 @@ namespace SWKOM_DMS.Tests
         {
             _mockRepo = new Mock<IDocumentRepository>();
             _mockMapper = new Mock<IMapper>();
-            _mockLogger = new Mock<ILoggerWrapper>();  // Updated
-            _mockRabbitMqLogger = new Mock<ILoggerWrapper>();  // Updated
+            _mockLogger = new Mock<ILoggerWrapper>();  
+            _mockRabbitMqLogger = new Mock<ILoggerWrapper>();  
 
             // Set up a mock configuration for RabbitMQService
             var inMemorySettings = new Dictionary<string, string>
