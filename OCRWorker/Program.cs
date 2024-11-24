@@ -1,6 +1,7 @@
 ﻿using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using Tesseract;
@@ -68,8 +69,11 @@ class OCRWorker
             var message = Encoding.UTF8.GetString(body);
             _logger.Info($"Received message: {message}");
 
+            // Fetch file path from message
+            string filePath = message;
+
             // Simulate OCR Processing
-            var ocrResult = ProcessDocument("path-to-pdf.pdf"); // Update this to fetch the actual file path
+            var ocrResult = ProcessDocument(filePath); // Update this to fetch the actual file path
             _logger.Info($"OCR Result: {ocrResult}");
 
             // Optionally send the result back to another queue
@@ -89,18 +93,75 @@ class OCRWorker
 
     private static string ProcessDocument(string filePath)
     {
+        string outputDir = "/tmp/ocr-images";
+        Directory.CreateDirectory(outputDir);
+
         try
         {
-            using var engine = new TesseractEngine(@"./tessdata", "eng", EngineMode.Default);
-            using var img = Pix.LoadFromFile(filePath);
-            using var page = engine.Process(img);
+            // Step 1: Convert PDF to Images
+            ConvertPdfToImages(filePath, outputDir);
 
-            return page.GetText();
+            // Step 2: Perform OCR on each image
+            StringBuilder ocrText = new StringBuilder();
+            using var engine = new TesseractEngine(@"./tessdata", "eng", EngineMode.Default);
+
+            foreach (var imagePath in Directory.GetFiles(outputDir, "*.png"))
+            {
+                using var img = Pix.LoadFromFile(imagePath);
+                using var page = engine.Process(img);
+                ocrText.AppendLine(page.GetText());
+            }
+
+            // Cleanup temporary files
+            Directory.Delete(outputDir, true);
+
+            return ocrText.ToString();
         }
         catch (Exception ex)
         {
             _logger.Error("Error during OCR processing", ex);
             return string.Empty;
+        }
+    }
+
+    private static void ConvertPdfToImages(string pdfPath, string outputDir)
+    {
+        try
+        {
+            _logger.Info($"Converting PDF to images: {pdfPath}");
+
+            var ghostscriptPath = "/usr/bin/gs"; // Path to Ghostscript
+            var args = $"-sDEVICE=pngalpha -o {outputDir}/output-%d.png -r300 \"{pdfPath}\"";
+
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = ghostscriptPath,
+                    Arguments = args,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            process.WaitForExit();
+
+            if (process.ExitCode != 0)
+            {
+                string errorOutput = process.StandardError.ReadToEnd();
+                _logger.Error($"Ghostscript failed: {errorOutput}");
+                throw new Exception($"Ghostscript error: {errorOutput}");
+            }
+
+            _logger.Info("PDF successfully converted to images.");
+        }
+        catch (Exception ex)
+        {
+            _logger.Error("Error during PDF-to-image conversion", ex);
+            throw;
         }
     }
 

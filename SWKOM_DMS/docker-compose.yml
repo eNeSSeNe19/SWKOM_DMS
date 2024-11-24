@@ -1,6 +1,7 @@
 ﻿version: '3.8'
 
 services:
+  # REST-Server für die Hauptanwendung
   rest-server:
     image: myapp
     build:
@@ -9,12 +10,13 @@ services:
     ports:
       - "8081:80"
     depends_on:
-      - postgres  # Ensure the rest-server waits for PostgreSQL to be ready
-      - rabbitmq  # Ensure rest-server starts after RabbitMQ
+      - postgres  # Warte auf PostgreSQL
+      - rabbitmq  # Warte auf RabbitMQ
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=swkom_dms;Username=enes;Password=sene
 
+  # Web-UI (Frontend mit NGINX)
   web-ui:
     image: nginx-frontend
     build:
@@ -24,6 +26,7 @@ services:
     depends_on:
       - rest-server
 
+  # PostgreSQL-Datenbank
   postgres:
     image: postgres:13
     environment:
@@ -35,21 +38,30 @@ services:
     ports:
       - "1919:5432"
 
+  # RabbitMQ für Messaging
   rabbitmq:
     image: rabbitmq:3-management
+    container_name: rabbitmq
     ports:
-      - "5672:5672"  # Port for RabbitMQ client connections
-      - "15672:15672"  # Port for RabbitMQ management UI
+      - "5672:5672"  # Port für RabbitMQ-Clients
+      - "15672:15672"  # Port für RabbitMQ-Management-UI
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
 
+  # OCR-Worker für die OCR-Verarbeitung
   ocr-worker:
-    image: ocr-worker
     build:
-      context: ../OCRWorker # Adjust to the correct relative path to OCRWorker Dockerfile
+      context: ../OCRWorker # Pfad zum OCRWorker-Ordner ../OCRWorker     context:  # Passe den Pfad an
+      dockerfile: Dockerfile
+    container_name: ocr-worker
     depends_on:
-     - rabbitmq
+      - rabbitmq  # Warte auf RabbitMQ, bevor der OCR-Worker startet
+    environment:
+      RABBITMQ_HOST: rabbitmq
+    volumes:
+      - /tmp:/tmp  # Für temporäre Dateien (z. B. PDF-Konvertierungen)
+
 
 volumes:
   postgres_data:
