@@ -43,6 +43,10 @@ namespace SWKOM_DMS.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<long>("FileSize")
                         .HasColumnType("bigint");
 

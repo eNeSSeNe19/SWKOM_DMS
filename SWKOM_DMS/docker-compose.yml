@@ -9,11 +9,13 @@ services:
     ports:
       - "8081:80"
     depends_on:
-      - postgres  # Ensure the rest-server waits for PostgreSQL to be ready
-      - rabbitmq  # Ensure rest-server starts after RabbitMQ
+      - postgres
+      - rabbitmq
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=swkom_dms;Username=enes;Password=sene
+    volumes:
+      - ./SharedDirectory:/app/SharedDirectory
 
   web-ui:
     image: nginx-frontend
@@ -38,18 +40,26 @@ services:
   rabbitmq:
     image: rabbitmq:3-management
     ports:
-      - "5672:5672"  # Port for RabbitMQ client connections
-      - "15672:15672"  # Port for RabbitMQ management UI
+      - "5672:5672"  # RabbitMQ client connections
+      - "15672:15672"  # RabbitMQ management UI
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
 
   ocr-worker:
-    image: ocr-worker
     build:
-      context: ../OCRWorker # Adjust to the correct relative path to OCRWorker Dockerfile
+      context: ../OCRWorker
+      dockerfile: Dockerfile
     depends_on:
-     - rabbitmq
+      - rabbitmq
+    environment:
+      - TESSDATA_PREFIX=/app/tessdata
+    volumes:
+      - ./OCRWorker/tessdata:/app/tessdata
+      - ./SharedDirectory:/app/SharedDirectory
+    restart: always  # Ensures the worker restarts in case of failures
 
 volumes:
   postgres_data:
+
+

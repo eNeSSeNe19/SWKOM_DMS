@@ -26,5 +26,7 @@ namespace SWKOM_DMS.Entities
 
         [Required(ErrorMessage = "FileContent is required")]
         public byte[] FileContent { get; set; }
+
+        public string FilePath { get; set; }
     }
 }

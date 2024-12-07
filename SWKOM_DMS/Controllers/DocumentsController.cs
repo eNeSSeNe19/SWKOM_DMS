@@ -42,6 +42,37 @@ namespace SWKOM_DMS.Controllers
         }
 
 
+        //[HttpPost("upload")]
+        //public async Task<IActionResult> UploadDocument([FromBody] DocumentDto documentDto)
+        //{
+        //    if (documentDto == null)
+        //    {
+        //        _logger.Warn("Upload attempted with a null DocumentDto.");
+        //        return BadRequest("Document data is missing.");
+        //    }
+
+        //    try
+        //    {
+        //        // Map DTO to Document entity
+        //        var documentEntity = _mapper.Map<Document>(documentDto);
+
+        //        // Save the document in the database
+        //        await _repository.AddDocumentAsync(documentEntity);
+        //        _logger.Info($"Document saved to the database successfully: {documentEntity.FileName}");
+
+        //        // Send message to RabbitMQ
+        //        _rabbitMqService.SendMessage($"Document uploaded: {documentEntity.FileName}");
+        //        _logger.Info($"Message sent to RabbitMQ for document: {documentEntity.FileName}");
+
+        //        return Ok("Document uploaded and message sent to RabbitMQ successfully.");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.Error("Error occurred while uploading document or sending message to RabbitMQ.", ex);
+        //        return StatusCode(500, "An error occurred while uploading the document.");
+        //    }
+        //}
+
         [HttpPost("upload")]
         public async Task<IActionResult> UploadDocument([FromBody] DocumentDto documentDto)
         {
@@ -53,6 +84,18 @@ namespace SWKOM_DMS.Controllers
 
             try
             {
+                // Save file to the shared directory
+                var sharedDirectory = Path.Combine(Directory.GetCurrentDirectory(), "SharedDirectory");
+                if (!Directory.Exists(sharedDirectory))
+                {
+                    Directory.CreateDirectory(sharedDirectory);
+                }
+
+                var filePath = Path.Combine(sharedDirectory, documentDto.FileName);
+                var fileBytes = Convert.FromBase64String(documentDto.FileContent);
+                await System.IO.File.WriteAllBytesAsync(filePath, fileBytes);
+                documentDto.FilePath = filePath;
+
                 // Map DTO to Document entity
                 var documentEntity = _mapper.Map<Document>(documentDto);
 
@@ -61,8 +104,8 @@ namespace SWKOM_DMS.Controllers
                 _logger.Info($"Document saved to the database successfully: {documentEntity.FileName}");
 
                 // Send message to RabbitMQ
-                _rabbitMqService.SendMessage($"Document uploaded: {documentEntity.FileName}");
-                _logger.Info($"Message sent to RabbitMQ for document: {documentEntity.FileName}");
+                _rabbitMqService.SendMessage(documentDto.FilePath); // Send full file path
+                _logger.Info($"Message sent to RabbitMQ for document: {documentEntity.FilePath}");
 
                 return Ok("Document uploaded and message sent to RabbitMQ successfully.");
             }
@@ -72,6 +115,8 @@ namespace SWKOM_DMS.Controllers
                 return StatusCode(500, "An error occurred while uploading the document.");
             }
         }
+
+
 
 
 

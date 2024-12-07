@@ -1,10 +1,21 @@
-﻿namespace SWKOM_DMS.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace SWKOM_DMS.DTOs
 {
     public class DocumentDto
     {
-        required public string FileName { get; set; }
-        required public string ContentType { get; set; }
-        required public byte[] FileContent { get; set; }
-        required public string FileType { get; set; } 
+        [Required] // FileName is mandatory
+        public string FileName { get; set; }
+
+        [Required] // ContentType is mandatory
+        public string ContentType { get; set; }
+
+        [Required] // FileContent is mandatory
+        public string FileContent { get; set; }
+
+        [Required] // FileType is mandatory
+        public string FileType { get; set; }
+
+        public string ?FilePath { get; set; }
     }
 }

@@ -17,6 +17,7 @@ namespace SWKOM_DMS
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddAutoMapper(typeof(Program));
+            builder.Services.AddAutoMapper(typeof(MappingProfile));
 
             builder.Services.AddDbContext<DocumentDbContext>(options =>
                 options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));

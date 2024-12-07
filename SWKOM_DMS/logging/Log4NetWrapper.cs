@@ -21,8 +21,9 @@ namespace SWKOM_DMS.logging
         public Log4NetWrapper()
         {
             var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
-            string configFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "C:\\Users\\eNeSSeNe\\Desktop\\SWKOM_DMS\\SWKOM_DMS\\logging\\log4net.config");
-            XmlConfigurator.Configure(logRepository, new FileInfo(configFilePath));
+            string config
+                = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "C:\\Users\\eNeSSeNe\\Desktop\\SWKOM_DMS\\SWKOM_DMS\\logging\\log4net.config");
+            XmlConfigurator.Configure(logRepository, new FileInfo(config));
 
             _logger = LogManager.GetLogger(typeof(Log4NetWrapper));
         }
