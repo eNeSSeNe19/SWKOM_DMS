@@ -41,6 +41,8 @@ namespace SWKOM_DMS
 
             // Add services to the container.
             builder.Services.AddControllers();
+            builder.Services.AddDbContext<DocumentDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 

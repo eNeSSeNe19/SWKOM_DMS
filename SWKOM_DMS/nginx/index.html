@@ -11,6 +11,16 @@
     <div id="content">
         <p id="message">Loading...</p>
     </div>
+    <div id="upload-section">
+        <h2>Upload a Document</h2>
+        <form id="uploadForm">
+            <label for="file">Choose a PDF:</label>
+            <input type="file" id="file" name="file" accept="application/pdf" required>
+            <button type="submit">Upload</button>
+        </form>
+        <p id="uploadMessage"></p>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>
