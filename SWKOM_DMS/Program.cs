@@ -46,6 +46,14 @@ namespace SWKOM_DMS
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            builder.Services.AddSingleton<ElasticsearchClientProvider>(provider =>
+            {
+                var configuration = provider.GetRequiredService<IConfiguration>();
+                var elasticUri = configuration.GetSection("ElasticsearchConfig:Uri").Value;
+                return new ElasticsearchClientProvider(elasticUri);
+            });
+
+
             // Configure log4net
             var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
             XmlConfigurator.Configure(logRepository, new FileInfo("C:\\Users\\eNeSSeNe\\Desktop\\SWKOM_DMS\\SWKOM_DMS\\logging\\log4net.config")); // Path to your config file
@@ -54,12 +62,16 @@ namespace SWKOM_DMS
             builder.Services.AddSingleton<ILoggerWrapper>(CustomLoggerFactory.GetLogger());
             builder.Services.AddSingleton<RabbitMQService>();
 
+            
 
             var logger = new Log4NetWrapper(); // assuming `Log4NetWrapper` has been properly configured
             logger.Info("Application started - test log");
 
 
             var app = builder.Build();
+
+            var rabbitMQService = app.Services.GetRequiredService<RabbitMQService>();
+            rabbitMQService.ConsumeOcrResults();
 
             // Enable CORS
             app.UseCors("AllowAll");

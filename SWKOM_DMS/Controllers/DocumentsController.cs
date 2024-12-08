@@ -2,10 +2,11 @@ using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using SWKOM_DMS.DTOs;
 using SWKOM_DMS.Entities;
-using SWKOM_DMS.Services; 
+using SWKOM_DMS.Services;
 using System.Threading.Tasks;
 using SWKOM_DMS.logging;
 using Microsoft.EntityFrameworkCore;
+using Elastic.Clients.Elasticsearch;
 
 namespace SWKOM_DMS.Controllers
 {
@@ -16,17 +17,24 @@ namespace SWKOM_DMS.Controllers
         private readonly IMapper _mapper;
         private readonly ILoggerWrapper _logger;
         private readonly IDocumentRepository _repository;
-        private readonly RabbitMQService _rabbitMqService; // Inject RabbitMQService
+        private readonly RabbitMQService _rabbitMqService;
         private readonly DocumentDbContext _dbContext;
+        private readonly ElasticsearchClient _elasticClient; // Using your custom Elasticsearch client
 
-        // Constructor now includes RabbitMQ service
-        public DocumentsController(IMapper mapper, ILoggerWrapper logger, IDocumentRepository repository, RabbitMQService rabbitMqService, DocumentDbContext dbContext)
+        public DocumentsController(
+            IMapper mapper,
+            ILoggerWrapper logger,
+            IDocumentRepository repository,
+            RabbitMQService rabbitMqService,
+            DocumentDbContext dbContext,
+            ElasticsearchClientProvider elasticClientProvider)
         {
             _mapper = mapper;
             _logger = logger;
             _repository = repository;
             _rabbitMqService = rabbitMqService;
             _dbContext = dbContext;
+            _elasticClient = elasticClientProvider.GetClient(); // Obtain Elasticsearch client from provider
         }
 
         // 1. List all documents
@@ -44,9 +52,7 @@ namespace SWKOM_DMS.Controllers
             }
         }
 
-
-
-
+        // 2. Upload document and send it to RabbitMQ for OCR processing
         [HttpPost("upload")]
         public async Task<IActionResult> Upload(IFormFile file)
         {
@@ -57,7 +63,6 @@ namespace SWKOM_DMS.Controllers
 
             try
             {
-                // Save file to shared directory
                 var sharedDirectory = Path.Combine(Directory.GetCurrentDirectory(), "SharedDirectory");
                 if (!Directory.Exists(sharedDirectory))
                 {
@@ -70,7 +75,6 @@ namespace SWKOM_DMS.Controllers
                     await file.CopyToAsync(fileStream);
                 }
 
-                // Create a document entity
                 var document = new Document
                 {
                     FileName = file.FileName,
@@ -78,16 +82,14 @@ namespace SWKOM_DMS.Controllers
                     FileSize = file.Length,
                     UploadDate = DateTime.UtcNow,
                     FilePath = filePath,
-                    FileContent = System.IO.File.ReadAllBytes(filePath), // Read file content
-                    ContentType = "pdf" // or dynamically determine
+                    FileContent = System.IO.File.ReadAllBytes(filePath),
+                    ContentType = "pdf"
                 };
 
-                // Save document to database
                 _dbContext.Documents.Add(document);
                 await _dbContext.SaveChangesAsync();
 
-                // Send message to RabbitMQ
-                _rabbitMqService.SendMessage(filePath); // Provide full file path for processing
+                _rabbitMqService.SendMessage(filePath);
                 _logger.Info($"Message sent to RabbitMQ for document: {document.FilePath}");
 
                 return Ok("File uploaded successfully, and message sent to RabbitMQ.");
@@ -99,39 +101,39 @@ namespace SWKOM_DMS.Controllers
             }
         }
 
-
-
-
-
-
-
-        // 3. Test database connection
-        [HttpGet("test-db-connection")]
-        public async Task<IActionResult> TestDbConnection()
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchDocuments([FromQuery] string query)
         {
+            if (string.IsNullOrEmpty(query))
+            {
+                return BadRequest("Query parameter is required.");
+            }
+
             try
             {
-                var document = new Document
+                var searchResponse = await _elasticClient.SearchAsync<object>(s => s
+                    .Index("ocr_results") // The name of the index
+                    .Query(q => q
+                        .Match(m => m
+                            .Field("ocrContent") // The field containing OCR text
+                            .Query(query) // The search term
+                        )
+                    )
+                );
+
+                if (!searchResponse.IsValidResponse)
                 {
-                    FileName = "Test Document",
-                    FileType = "pdf",
-                    FileSize = 1000,
-                    ContentType = "application/pdf",
-                    FileContent = new byte[] { 0x1, 0x2, 0x3 },
-                    UploadDate = DateTime.UtcNow
-                };
+                    return StatusCode(500, $"Elasticsearch search failed: {searchResponse.ElasticsearchServerError?.Error.Reason}");
+                }
 
-                await _repository.AddDocumentAsync(document); // Using repository to add document
-
-                // Send test message to RabbitMQ
-                _rabbitMqService.SendMessage($"Test document uploaded: {document.FileName}");
-
-                return Ok("Database connection and insert operation successful.");
+                var results = searchResponse.Documents; // Get the results from the search
+                return Ok(results);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Database connection failed: {ex.Message}");
+                return StatusCode(500, $"Error occurred during search: {ex.Message}");
             }
         }
+
     }
 }

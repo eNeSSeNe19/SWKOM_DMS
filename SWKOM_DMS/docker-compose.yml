@@ -11,9 +11,11 @@ services:
     depends_on:
       - postgres
       - rabbitmq
+      - elasticsearch
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=swkom_dms;Username=enes;Password=sene
+      - Elasticsearch__Uri=http://elasticsearch:9200 # Add Elasticsearch connection string
     volumes:
       - ./SharedDirectory:/app/SharedDirectory
 
@@ -46,14 +48,28 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.10.0
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false # Disable X-Pack security for development
+    ports:
+      - "9200:9200"  # REST API
+      - "9300:9300"  # Transport
+    volumes:
+      - elastic_data:/usr/share/elasticsearch/data # Persistent data storage
+
   ocr-worker:
     build:
       context: ../OCRWorker
       dockerfile: Dockerfile
     depends_on:
       - rabbitmq
+      - elasticsearch      
     environment:
       - TESSDATA_PREFIX=/app/tessdata
+      - ElasticsearchConfig__Uri=http://elasticsearch:9200 # Add Elasticsearch connection string for worker
     volumes:
       - ./OCRWorker/tessdata:/app/tessdata
       - ./SharedDirectory:/app/SharedDirectory
@@ -61,5 +77,4 @@ services:
 
 volumes:
   postgres_data:
-
-
+  elastic_data:

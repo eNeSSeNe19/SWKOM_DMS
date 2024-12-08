@@ -48,5 +48,40 @@ document.addEventListener("DOMContentLoaded", function () {
                 document.getElementById("uploadMessage").innerText = "An error occurred during the upload.";
             });
     });
-});
 
+    // Handle the search
+    const searchForm = document.getElementById("searchForm");
+    searchForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const queryInput = document.getElementById("query");
+        const query = queryInput.value.trim();
+
+        if (!query) {
+            document.getElementById("searchResults").innerText = "Please enter a search term.";
+            return;
+        }
+
+        fetch(`http://localhost:8081/api/documents/search?query=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                const resultsDiv = document.getElementById("searchResults");
+                resultsDiv.innerHTML = ""; // Clear previous results
+
+                if (data.length === 0) {
+                    resultsDiv.innerText = "No results found.";
+                    return;
+                }
+
+                data.forEach(result => {
+                    const resultElement = document.createElement("p");
+                    resultElement.innerHTML = `<strong>File Path:</strong> ${result.filePath}<br><strong>OCR Content:</strong> ${result.ocrContent}`;
+                    resultsDiv.appendChild(resultElement);
+                });
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById("searchResults").innerText = "An error occurred while searching.";
+            });
+    });
+});
