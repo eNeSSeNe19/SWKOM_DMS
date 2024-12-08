@@ -1,17 +1,125 @@
+/* General body styling */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
+    font-family: 'Roboto', Arial, sans-serif;
+    background-color: #f8f9fa; /* Light gray background */
     margin: 0;
-    padding: 20px;
+    padding: 0;
+    line-height: 1.6;
 }
 
+/* Main header styling */
 h1 {
-    color: #333;
+    color: #444;
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 2.5rem;
+    font-weight: bold;
 }
 
-#content {
+/* General container styling */
+#content, #upload-section, #search-section {
+    max-width: 900px;
+    margin: 20px auto;
     padding: 20px;
     background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border: 1px solid #ddd;
+}
+
+    /* Section headers */
+    #upload-section h2, #search-section h2 {
+        color: #333;
+        font-size: 1.8rem;
+        margin-bottom: 15px;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 5px;
+    }
+
+/* Styling for the file list */
+#message {
+    background-color: #f1f3f5;
+    padding: 15px;
+    border: 1px solid #ccc;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    color: #555;
+}
+
+/* Highlighting text */
+.highlight {
+    background-color: #ffeb3b;
+    font-weight: bold;
+    color: #000;
+}
+
+/* Button styling */
+button {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+}
+
+    button:hover {
+        background-color: #0056b3;
+    }
+
+/* File input styling */
+input[type="file"], input[type="text"] {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+    input[type="file"]:focus, input[type="text"]:focus {
+        border-color: #007bff;
+        outline: none;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    }
+
+/* Results and feedback messages */
+#uploadMessage, #searchResults {
+    margin-top: 20px;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+#uploadMessage {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+#searchResults {
+    background-color: #f8f9fa;
+    color: #333;
+    border: 1px solid #ddd;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2rem;
+    }
+
+    #content, #upload-section, #search-section {
+        padding: 15px;
+    }
+
+    button {
+        width: 100%;
+    }
 }

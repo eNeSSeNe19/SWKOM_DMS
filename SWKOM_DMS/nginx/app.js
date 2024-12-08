@@ -68,17 +68,22 @@ document.addEventListener("DOMContentLoaded", function () {
                 const resultsDiv = document.getElementById("searchResults");
 
                 // Clear previous results
-                resultsDiv.innerHTML = ""; // Add this line to clear old results
+                resultsDiv.innerHTML = "";
 
                 if (data.length === 0) {
                     resultsDiv.innerText = "No results found.";
                     return;
                 }
 
-                // Display new results
+                // Highlight the searched term in the OCR content
                 data.forEach(result => {
+                    const highlightedContent = result.ocrContent.replace(
+                        new RegExp(`(${query})`, "gi"), // Match the query, case-insensitive
+                        `<span class="highlight">$1</span>` // Wrap matched text with a span
+                    );
+
                     const resultElement = document.createElement("p");
-                    resultElement.innerHTML = `<strong>File Path:</strong> ${result.filePath}<br><strong>OCR Content:</strong> ${result.ocrContent}`;
+                    resultElement.innerHTML = `<strong>File Path:</strong> ${result.filePath}<br><strong>OCR Content:</strong> ${highlightedContent}`;
                     resultsDiv.appendChild(resultElement);
                 });
             })
@@ -87,5 +92,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 document.getElementById("searchResults").innerText = "An error occurred while searching.";
             });
     });
+
 
 });
