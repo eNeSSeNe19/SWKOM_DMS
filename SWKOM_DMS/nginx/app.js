@@ -66,13 +66,16 @@ document.addEventListener("DOMContentLoaded", function () {
             .then(response => response.json())
             .then(data => {
                 const resultsDiv = document.getElementById("searchResults");
-                resultsDiv.innerHTML = ""; // Clear previous results
+
+                // Clear previous results
+                resultsDiv.innerHTML = ""; // Add this line to clear old results
 
                 if (data.length === 0) {
                     resultsDiv.innerText = "No results found.";
                     return;
                 }
 
+                // Display new results
                 data.forEach(result => {
                     const resultElement = document.createElement("p");
                     resultElement.innerHTML = `<strong>File Path:</strong> ${result.filePath}<br><strong>OCR Content:</strong> ${result.ocrContent}`;
@@ -84,4 +87,5 @@ document.addEventListener("DOMContentLoaded", function () {
                 document.getElementById("searchResults").innerText = "An error occurred while searching.";
             });
     });
+
 });

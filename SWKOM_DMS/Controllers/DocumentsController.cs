@@ -112,11 +112,11 @@ namespace SWKOM_DMS.Controllers
             try
             {
                 var searchResponse = await _elasticClient.SearchAsync<object>(s => s
-                    .Index("ocr_results") // The name of the index
+                    .Index("ocr_results") // Ensure this is the correct index
                     .Query(q => q
                         .Match(m => m
-                            .Field("ocrContent") // The field containing OCR text
-                            .Query(query) // The search term
+                            .Field("ocrContent") // Field name should match the indexed data
+                            .Query(query)
                         )
                     )
                 );
@@ -126,7 +126,7 @@ namespace SWKOM_DMS.Controllers
                     return StatusCode(500, $"Elasticsearch search failed: {searchResponse.ElasticsearchServerError?.Error.Reason}");
                 }
 
-                var results = searchResponse.Documents; // Get the results from the search
+                var results = searchResponse.Documents; // Retrieve matching documents
                 return Ok(results);
             }
             catch (Exception ex)
@@ -134,6 +134,7 @@ namespace SWKOM_DMS.Controllers
                 return StatusCode(500, $"Error occurred during search: {ex.Message}");
             }
         }
+
 
     }
 }
