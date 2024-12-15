@@ -7,7 +7,7 @@ using SWKOM_DMS.logging;
 
 namespace SWKOM_DMS.Services
 {
-    public class RabbitMQService
+    public class RabbitMQService : IRabbitMQService
     {
         private readonly string _hostname;
         private readonly string _queueName;
@@ -24,37 +24,37 @@ namespace SWKOM_DMS.Services
             _logger = logger;
             CreateConnection();
         }
-        
-        private void CreateConnection()
+
+        public void CreateConnection()
         {
-            try
+            var factory = new ConnectionFactory() { HostName = "rabbitmq", Port = 5672 };
+            int maxRetries = 8;
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
-                var factory = new ConnectionFactory() { HostName = _hostname };
-                _connection = factory.CreateConnection();
-                _channel = _connection.CreateModel();
-
-                // Declare the main queue for document processing
-                _channel.QueueDeclare(queue: _queueName,
-                                      durable: false,
-                                      exclusive: false,
-                                      autoDelete: false,
-                                      arguments: null);
-
-                // Declare the OCR results queue
-                _channel.QueueDeclare(queue: _ocrResultsQueueName,
-                                      durable: false,
-                                      exclusive: false,
-                                      autoDelete: false,
-                                      arguments: null);
-
-                _logger.Info("RabbitMQ connection and queue declarations successful.");
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("Failed to connect to RabbitMQ.", ex);
-                throw new ApplicationException("Could not establish a connection to RabbitMQ.", ex);
+                try
+                {
+                    Console.WriteLine($"Attempting to connect to RabbitMQ (attempt {attempt}/{maxRetries})...");
+                    _connection = factory.CreateConnection();
+                    _channel = _connection.CreateModel(); // Initialize the channel here
+                    Console.WriteLine("Connected to RabbitMQ and channel initialized!");
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to connect to RabbitMQ: {ex.Message}");
+                    if (attempt < maxRetries)
+                    {
+                        Console.WriteLine("Retrying in 5 seconds...");
+                        Thread.Sleep(5000); // Wait 5 seconds before retrying
+                    }
+                    else
+                    {
+                        throw new ApplicationException("Could not establish a connection to RabbitMQ after multiple attempts.");
+                    }
+                }
             }
         }
+
 
         public void SendMessage(string message)
         {
@@ -114,6 +114,13 @@ namespace SWKOM_DMS.Services
 
             try
             {
+                // Ensure the queue is declared before consuming
+                _channel.QueueDeclare(queue: _ocrResultsQueueName,
+                                      durable: false,
+                                      exclusive: false,
+                                      autoDelete: false,
+                                      arguments: null);
+
                 var consumer = new EventingBasicConsumer(_channel);
                 consumer.Received += (model, eventArgs) =>
                 {
@@ -129,7 +136,7 @@ namespace SWKOM_DMS.Services
                                       autoAck: true,
                                       consumer: consumer);
 
-                _logger.Info("Started consuming messages from 'ocr_results_queue'.");
+                _logger.Info($"Started consuming messages from '{_ocrResultsQueueName}'.");
             }
             catch (Exception ex)
             {
@@ -137,6 +144,7 @@ namespace SWKOM_DMS.Services
                 throw;
             }
         }
+
 
         public void CloseConnection()
         {

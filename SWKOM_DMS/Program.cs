@@ -16,74 +16,81 @@ namespace SWKOM_DMS
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            // AutoMapper setup
             builder.Services.AddAutoMapper(typeof(Program));
             builder.Services.AddAutoMapper(typeof(MappingProfile));
 
+            // Database Context
             builder.Services.AddDbContext<DocumentDbContext>(options =>
                 options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
 
-            // Ensure the application listens on port 80 inside the container
+            // Register RabbitMQService
+            builder.Services.AddSingleton<IRabbitMQService, RabbitMQService>(); // Singleton
+
+            // Set up URLs
             builder.WebHost.UseUrls("http://*:80");
 
-            // Add CORS policy
+            // CORS Policy
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowAll",
-                    builder =>
-                    {
-                        builder.AllowAnyOrigin()
-                               .AllowAnyMethod()
-                               .AllowAnyHeader();
-                    });
+                options.AddPolicy("AllowAll", builder =>
+                {
+                    builder.AllowAnyOrigin()
+                           .AllowAnyMethod()
+                           .AllowAnyHeader();
+                });
             });
 
-            // Add services to the container.
+            // Add services
             builder.Services.AddControllers();
-            builder.Services.AddDbContext<DocumentDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            builder.Services.AddSingleton<ElasticsearchClientProvider>(provider =>
+            // Register Elasticsearch client provider
+            builder.Services.AddSingleton<IElasticsearchClientProvider>(provider =>
             {
                 var configuration = provider.GetRequiredService<IConfiguration>();
-                var elasticUri = configuration.GetSection("ElasticsearchConfig:Uri").Value;
+                var elasticUri = configuration["ElasticsearchConfig:Uri"];
                 return new ElasticsearchClientProvider(elasticUri);
             });
 
 
+
             // Configure log4net
             var logRepository = LogManager.GetRepository(Assembly.GetEntryAssembly());
-            XmlConfigurator.Configure(logRepository, new FileInfo("C:\\Users\\eNeSSeNe\\Desktop\\SWKOM_DMS\\SWKOM_DMS\\logging\\log4net.config")); // Path to your config file
+            var logFilePath = Path.Combine(Directory.GetCurrentDirectory(), "logging", "log4net.config");
+            XmlConfigurator.Configure(logRepository, new FileInfo(logFilePath));
 
-            // Register RabbitMQService with ILoggerWrapper
-            builder.Services.AddSingleton<ILoggerWrapper>(CustomLoggerFactory.GetLogger());
-            builder.Services.AddSingleton<RabbitMQService>();
+            // Register ILoggerWrapper
+            builder.Services.AddSingleton<ILoggerWrapper>(provider => CustomLoggerFactory.GetLogger());
 
-            
-
-            var logger = new Log4NetWrapper(); // assuming `Log4NetWrapper` has been properly configured
-            logger.Info("Application started - test log");
-
-
+            // Log the startup of the app
             var app = builder.Build();
 
-            var rabbitMQService = app.Services.GetRequiredService<RabbitMQService>();
-            rabbitMQService.ConsumeOcrResults();
+            // Use the logger from DI container
+            var logger = app.Services.GetRequiredService<ILoggerWrapper>();
+            logger.Info("Application started - test log");
+
+            // Call RabbitMQ consume method
+            using (var scope = app.Services.CreateScope())
+            {
+                var rabbitMQService = scope.ServiceProvider.GetRequiredService<IRabbitMQService>();
+                rabbitMQService.ConsumeOcrResults();
+            }
+
 
             // Enable CORS
             app.UseCors("AllowAll");
 
-            // Configure the HTTP request pipeline.
+            // Configure the HTTP request pipeline
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
 
-            // app.UseHttpsRedirection();
             app.UseAuthorization();
             app.MapControllers();
 

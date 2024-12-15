@@ -6,9 +6,37 @@ document.addEventListener("DOMContentLoaded", function () {
             const messageDiv = document.getElementById("message");
             messageDiv.innerHTML = ""; // Clear previous content
             data.forEach(doc => {
-                const docElement = document.createElement("p");
-                docElement.innerText = `Name: ${doc.fileName}, Type: ${doc.fileType}`;
+                const docElement = document.createElement("div");
+                docElement.classList.add("doc-item");
+                docElement.innerHTML = `
+                    <p>Name: ${doc.fileName}, Type: ${doc.fileType}</p>
+                    <button class="delete-btn" data-id="${doc.id}">Delete</button>
+                `;
                 messageDiv.appendChild(docElement);
+            });
+
+            // Attach delete functionality to each button
+            document.querySelectorAll(".delete-btn").forEach(button => {
+                button.addEventListener("click", function () {
+                    const documentId = this.getAttribute("data-id");
+                    if (confirm("Are you sure you want to delete this document?")) {
+                        fetch(`http://localhost:8081/api/documents/${documentId}`, {
+                            method: "DELETE",
+                        })
+                            .then(response => {
+                                if (response.ok) {
+                                    this.parentElement.remove(); // Remove item from the UI
+                                    alert("Document deleted successfully!");
+                                } else {
+                                    alert("Failed to delete document.");
+                                }
+                            })
+                            .catch(error => {
+                                console.error("Error deleting document:", error);
+                                alert("An error occurred while deleting the document.");
+                            });
+                    }
+                });
             });
         })
         .catch(err => {
@@ -75,15 +103,20 @@ document.addEventListener("DOMContentLoaded", function () {
                     return;
                 }
 
-                // Highlight the searched term in the OCR content
+                // Render search results without Delete button
                 data.forEach(result => {
                     const highlightedContent = result.ocrContent.replace(
                         new RegExp(`(${query})`, "gi"), // Match the query, case-insensitive
                         `<span class="highlight">$1</span>` // Wrap matched text with a span
                     );
 
-                    const resultElement = document.createElement("p");
-                    resultElement.innerHTML = `<strong>File Path:</strong> ${result.filePath}<br><strong>OCR Content:</strong> ${highlightedContent}`;
+                    const resultElement = document.createElement("div");
+                    resultElement.classList.add("result-item");
+                    resultElement.innerHTML = `
+                        <p><strong>File Path:</strong> ${result.filePath}</p>
+                        <p><strong>OCR Content:</strong> ${highlightedContent}</p>
+                    `;
+
                     resultsDiv.appendChild(resultElement);
                 });
             })
@@ -92,6 +125,4 @@ document.addEventListener("DOMContentLoaded", function () {
                 document.getElementById("searchResults").innerText = "An error occurred while searching.";
             });
     });
-
-
 });

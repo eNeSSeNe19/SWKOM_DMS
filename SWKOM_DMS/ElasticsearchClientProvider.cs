@@ -1,28 +1,25 @@
 ﻿using Elastic.Clients.Elasticsearch;
 
-public class ElasticsearchClientProvider
+namespace SWKOM_DMS.Services
 {
-    private readonly ElasticsearchClient _client;
-
-    public ElasticsearchClientProvider(string uri)
+    public class ElasticsearchClientProvider : IElasticsearchClientProvider
     {
-        if (string.IsNullOrWhiteSpace(uri))
-        {
-            throw new ArgumentException("Elasticsearch URI cannot be null or empty.");
-        }
+        private readonly ElasticsearchClient _client;
 
-        try
+        public ElasticsearchClientProvider(string uri)
         {
+            if (string.IsNullOrWhiteSpace(uri))
+            {
+                throw new ArgumentException("Elasticsearch URI cannot be null or empty.");
+            }
+
             var settings = new ElasticsearchClientSettings(new Uri(uri));
             _client = new ElasticsearchClient(settings);
-            Console.WriteLine($"Successfully initialized Elasticsearch client with URI: {uri}");
         }
-        catch (Exception ex)
+
+        public ElasticsearchClient GetClient()
         {
-            Console.WriteLine($"Failed to initialize Elasticsearch client. Error: {ex.Message}");
-            throw;
+            return _client;
         }
     }
-
-    public ElasticsearchClient GetClient() => _client;
 }

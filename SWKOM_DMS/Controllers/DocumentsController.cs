@@ -17,17 +17,17 @@ namespace SWKOM_DMS.Controllers
         private readonly IMapper _mapper;
         private readonly ILoggerWrapper _logger;
         private readonly IDocumentRepository _repository;
-        private readonly RabbitMQService _rabbitMqService;
+        private readonly IRabbitMQService _rabbitMqService; 
         private readonly DocumentDbContext _dbContext;
-        private readonly ElasticsearchClient _elasticClient; // Using your custom Elasticsearch client
+        private readonly ElasticsearchClient _elasticClient; 
 
         public DocumentsController(
             IMapper mapper,
             ILoggerWrapper logger,
             IDocumentRepository repository,
-            RabbitMQService rabbitMqService,
+            IRabbitMQService rabbitMqService, 
             DocumentDbContext dbContext,
-            ElasticsearchClientProvider elasticClientProvider)
+            IElasticsearchClientProvider elasticClientProvider)
         {
             _mapper = mapper;
             _logger = logger;
@@ -58,22 +58,30 @@ namespace SWKOM_DMS.Controllers
         {
             if (file == null || file.Length == 0)
             {
+                _logger.Warn("No file uploaded.");
                 return BadRequest("No file uploaded.");
             }
 
             try
             {
+                _logger.Info("Starting file upload process.");
+
                 var sharedDirectory = Path.Combine(Directory.GetCurrentDirectory(), "SharedDirectory");
                 if (!Directory.Exists(sharedDirectory))
                 {
+                    _logger.Warn("Shared directory does not exist. Creating directory.");
                     Directory.CreateDirectory(sharedDirectory);
                 }
 
                 var filePath = Path.Combine(sharedDirectory, file.FileName);
+                _logger.Info($"Saving file to: {filePath}");
+
                 using (var fileStream = new FileStream(filePath, FileMode.Create))
                 {
                     await file.CopyToAsync(fileStream);
                 }
+
+                _logger.Info("File saved successfully. Creating document entity.");
 
                 var document = new Document
                 {
@@ -86,20 +94,26 @@ namespace SWKOM_DMS.Controllers
                     ContentType = "pdf"
                 };
 
+                _logger.Info("Adding document to database.");
                 _dbContext.Documents.Add(document);
                 await _dbContext.SaveChangesAsync();
 
+                _logger.Info("Document saved in database. Sending message to RabbitMQ.");
                 _rabbitMqService.SendMessage(filePath);
-                _logger.Info($"Message sent to RabbitMQ for document: {document.FilePath}");
 
+                _logger.Info("Message sent to RabbitMQ successfully.");
                 return Ok("File uploaded successfully, and message sent to RabbitMQ.");
             }
             catch (Exception ex)
             {
-                _logger.Error("Error occurred while uploading document or sending message to RabbitMQ.", ex);
+                _logger.Error($"Error occurred during upload process: {ex.Message}", ex);
                 return StatusCode(500, "An error occurred while uploading the document.");
             }
         }
+
+
+
+
 
         [HttpGet("search")]
         public async Task<IActionResult> SearchDocuments([FromQuery] string query)
@@ -135,6 +149,45 @@ namespace SWKOM_DMS.Controllers
             }
         }
 
+        // Delete document from the database and return confirmation
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteDocument(int id)
+        {
+            // Find the document in the database
+            var document = await _dbContext.Documents.FindAsync(id);
+            if (document == null)
+            {
+                return NotFound("Document not found.");
+            }
+
+            try
+            {
+                // Remove the document file from the shared directory
+                var sharedDirectory = Path.Combine(Directory.GetCurrentDirectory(), "SharedDirectory");
+                var filePath = Path.Combine(sharedDirectory, document.FileName);
+
+                if (System.IO.File.Exists(filePath))
+                {
+                    System.IO.File.Delete(filePath); // Delete the file from the filesystem
+                    _logger.Info($"File deleted from shared directory: {filePath}");
+                }
+                else
+                {
+                    _logger.Warn($"File not found in shared directory: {filePath}");
+                }
+
+                // Remove the document from the database
+                _dbContext.Documents.Remove(document);
+                await _dbContext.SaveChangesAsync();
+
+                return Ok("Document and associated file deleted successfully.");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error occurred while deleting the document or its file.", ex);
+                return StatusCode(500, $"Error deleting document: {ex.Message}");
+            }
+        }
 
     }
 }
